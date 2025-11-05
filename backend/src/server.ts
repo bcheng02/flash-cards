@@ -25,6 +25,7 @@ app.get("/api/db-test", async (req: Request, res: Response) => {
   }
 });
 
+// create user
 app.post("/api/users", async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
@@ -39,6 +40,70 @@ app.post("/api/users", async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+// create
+app.post("/api/flashcards", async (req: Request, res: Response) => {
+  const { user_id, front, back } = req.body;
+  try {
+    const result = await pool.query(
+      "INSERT INTO flashcards (user_id, front, back) VALUES ($1, $2, $3) RETURNING *",
+      [user_id, front, back]
+    );
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create flashcard" });
+  }
+});
+
+// read
+app.get("/api/flashcards/:userId", async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT * FROM flashcards WHERE user_id = $1 ORDER BY created_at DESC",
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch flashcards" });
+  }
+});
+
+// update
+app.put("/api/flashcards/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { front, back } = req.body;
+
+  try {
+    const result = await pool.query(
+      "UPDATE flashcards SET front = $1, back = $2 WHERE id = $3 RETURNING *",
+      [front, back, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Flashcard not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update flashcard" });
+  }
+});
+
+// delete
+app.delete("/api/flashcards/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    await pool.query("DELETE FROM flashcards WHERE id = $1", [id]);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete flashcard" });
   }
 });
 
