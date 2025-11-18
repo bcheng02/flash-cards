@@ -11,7 +11,18 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret"; // in production, use a real secret in .env
+
+// Replace default CORS with configured CORS
+const corsOptions = {
+  origin: "http://localhost:5173",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(cookieParser());
+app.use(express.json()); // parses JSON bodies
 
 function generateTokens(userId: number) {
   const accessToken = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "15m" });
@@ -32,16 +43,10 @@ function authenticate(req: Request, res: Response, next: any) {
   });
 }
 
-
-
-// Middleware
-app.use(cors()); // allows requests from frontend
-app.use(express.json()); // parses JSON bodies
-
 // Test route
-// app.get("/api", (req: Request, res: Response) => {
-//   res.json({ message: "Hello from the backend 👋" });
-// });
+app.get("/api", (req: Request, res: Response) => {
+  res.json({ message: "Hello from the backend 👋" });
+});
 
 app.get("/api/db-test", async (req: Request, res: Response) => {
   try {
@@ -72,27 +77,9 @@ app.post("/api/auth/register", async (req: Request, res: Response) => {
       "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
       [username, hashed]
     );
-    const user = result.rows[0];
 
-    // replace with access + refresh tokens 
-    // const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
-    // res.json({ token, user });
-
-    const { accessToken, refreshToken } = generateTokens(user.id);
-
-    // send refresh token as HTTP-only cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: false, // set true in production (HTTPS)
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-
-    res.json({
-      accessToken,
-      user: { id: user.id, username: user.username }
-    });
-
+    // No tokens here; force user to login separately
+    res.status(201).json({ user: result.rows[0] });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: "Failed to register" });
@@ -164,6 +151,18 @@ app.post("/api/auth/logout", (req, res) => {
   res.json({ success: true });
 });
 
+// ME - protected route
+app.get("/api/me", authenticate, async (req: any, res: any) => {
+  const userId = (req as any).userId;
+  try {
+    const result = await pool.query("SELECT id, username FROM users WHERE id = $1", [userId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
 
 // ========== 🗂️ DECK ROUTES ==========
 
@@ -192,11 +191,11 @@ app.get("/api/decks", authenticate, async (req: Request, res: Response) => {
   const user_id = (req as any).userId;
 
   if (!user_id) {
-  return res.status(400).json({ error: "user_id required" });
+    return res.status(400).json({ error: "user_id required" });
   }
 
   try {
-   const result = await pool.query(
+    const result = await pool.query(
       "SELECT * FROM decks WHERE user_id = $1 ORDER BY created_at ASC",
       [user_id]
     );
