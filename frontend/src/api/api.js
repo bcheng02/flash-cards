@@ -18,6 +18,7 @@ export const authApi = {
 export const deckApi = {
   getAll: (user_id) => api.get(`/decks?user_id=${user_id}`),
   getOne: (id) => api.get(`/decks/${id}`),
+  getSummary: (id) => api.get(`/decks/${id}/summary`),
   create: (data) => api.post("/decks", data),
   update: (id, data) => api.put(`/decks/${id}`, data),
   delete: (id) => api.delete(`/decks/${id}`),

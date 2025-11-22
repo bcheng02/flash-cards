@@ -5,11 +5,13 @@ import Decks from "./pages/Decks";
 import DeckView from "./pages/DeckView";
 import RequireAuth from "./auth/RequireAuth";
 import { AuthProvider } from "./auth/AuthProvider";
+import NavBar from "./components/NavBar";
 
 export default function App() {
     return (
         <AuthProvider>
             <BrowserRouter>
+                <NavBar />
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />

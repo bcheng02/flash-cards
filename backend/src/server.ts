@@ -235,6 +235,47 @@ app.get("/api/decks/:id", authenticate, async (req: Request, res: Response) => {
   }
 });
 
+app.get("/api/decks/:id/summary", authenticate, async (req, res) => {
+  const { id } = req.params;            // was: const { deckId } = req.params;
+  const userId = (req as any).userId;
+
+  try {
+    const deckRes = await pool.query(
+      `SELECT * FROM decks WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+    if (deckRes.rows.length === 0) {
+      return res.status(404).json({ error: "Deck not found" });
+    }
+    const deck = deckRes.rows[0];
+
+    const idsRes = await pool.query(
+      `
+      WITH RECURSIVE deck_tree AS (
+        SELECT id FROM decks WHERE id = $1
+        UNION ALL
+        SELECT d.id FROM decks d
+        INNER JOIN deck_tree dt ON d.parent_id = dt.id
+      )
+      SELECT id FROM deck_tree;
+      `,
+      [id]
+    );
+    const deckIds = idsRes.rows.map(r => r.id);
+
+    const cardRes = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM flashcards WHERE deck_id = ANY($1::int[]);`,
+      [deckIds]
+    );
+
+    res.json({ ...deck, cardCount: cardRes.rows[0].count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch deck summary" });
+  }
+});
+
+
 // Update deck
 app.put("/api/decks/:id", authenticate, async (req: Request, res: Response) => {
   const { id } = req.params;

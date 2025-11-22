@@ -1,42 +1,128 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.page-container {
+  padding: 24px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.add-btn {
+  padding: 8px 12px;
+  background: #4a7cff;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.deck-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
 
-.card {
-  padding: 2em;
+.deck-card {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f3f3f3;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
 }
 
-.read-the-docs {
-  color: #888;
+.deck-card:hover {
+  background: #e7e7e7;
+}
+
+/* Modal additions */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 8px;
+  width: 340px;
+  max-width: 90%;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.modal form input {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.modal .row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal button[type="submit"] {
+  background: #4a7cff;
+  color: #fff;
+}
+
+.modal button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  background: #222;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.navbar a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.user-label {
+  margin-right: 12px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.logout-btn {
+  background: #ff5b5b;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #e04a4a;
 }

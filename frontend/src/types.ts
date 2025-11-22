@@ -2,8 +2,14 @@ export interface Deck {
     id: number;
     name: string;
     parent_id?: number | null;
-    user_id?: number | null;
+    user_id: number;
     created_at?: string;
+    updated_at?: string;
+}
+
+export interface DeckSummary extends Deck {
+  cardCount: number;
+  // todo: more fields added in future (reviewCount, newCount, etc)
 }
 
 export interface Flashcard {
