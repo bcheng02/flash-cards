@@ -170,13 +170,19 @@ app.get("/api/me", authenticate, async (req: any, res: any) => {
 app.post("/api/decks", authenticate, async (req: Request, res: Response) => {
   const { name, parent_id } = req.body;
   const user_id = (req as any).userId;
-
-  if (!user_id) return res.status(400).json({ error: "user_id is required" });
+  if (!user_id) return res.status(400).json({ error: "user_id required" });
 
   try {
+    // next position in this sibling group
+    const posRes = await pool.query(
+      "SELECT COALESCE(MAX(position), 0) + 1 AS next FROM decks WHERE user_id = $1 AND parent_id IS NOT DISTINCT FROM $2",
+      [user_id, parent_id ?? null]
+    );
+    const nextPos = posRes.rows[0].next;
+
     const result = await pool.query(
-      "INSERT INTO decks (name, user_id, parent_id) VALUES ($1, $2, $3) RETURNING *",
-      [name, user_id, parent_id || null]
+      "INSERT INTO decks (name, user_id, parent_id, position) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, user_id, parent_id ?? null, nextPos]
     );
     res.json(result.rows[0]);
   } catch (err: any) {
@@ -279,21 +285,63 @@ app.get("/api/decks/:id/summary", authenticate, async (req, res) => {
 // Update deck
 app.put("/api/decks/:id", authenticate, async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, parent_id, position } = req.body; // position optional
   const user_id = (req as any).userId;
 
   try {
-    const owner = await pool.query("SELECT user_id FROM decks WHERE id = $1", [id]);
-    if (owner.rows.length === 0) return res.status(404).json({ error: "Deck not found" });
-    if (owner.rows[0].user_id !== user_id) return res.status(403).json({ error: "Forbidden" });
+    const deckRes = await pool.query("SELECT * FROM decks WHERE id = $1", [id]);
+    if (deckRes.rows.length === 0) return res.status(404).json({ error: "Deck not found" });
+    if (deckRes.rows[0].user_id !== user_id) return res.status(403).json({ error: "Forbidden" });
 
-    const result = await pool.query(
-      "UPDATE decks SET name = $1 WHERE id = $2 RETURNING *",
-      [name, id]
+    // Validate new parent
+    if (parent_id != null) {
+      const parentRes = await pool.query("SELECT user_id FROM decks WHERE id = $1", [parent_id]);
+      if (parentRes.rows.length === 0) return res.status(400).json({ error: "Parent not found" });
+      if (parentRes.rows[0].user_id !== user_id) return res.status(403).json({ error: "Forbidden parent" });
+    }
+
+    // Prevent self-parent
+    if (parent_id != null && Number(parent_id) === Number(id)) {
+      return res.status(400).json({ error: "Cannot set deck as its own parent" });
+    }
+
+    // Prevent cycles (new parent cannot be descendant of this deck)
+    if (parent_id != null) {
+      const cycleCheck = await pool.query(
+        `WITH RECURSIVE subtree AS (
+           SELECT id FROM decks WHERE parent_id = $1
+           UNION ALL
+           SELECT d.id FROM decks d
+           JOIN subtree s ON d.parent_id = s.id
+         )
+         SELECT 1 FROM subtree WHERE id = $2 LIMIT 1;`,
+        [id, parent_id]
+      );
+      if (cycleCheck.rows.length > 0) {
+        return res.status(400).json({ error: "Cannot move deck under its descendant" });
+      }
+    }
+
+    let newPos = position;
+    // If reparenting without a position → append
+    if (parent_id !== deckRes.rows[0].parent_id && newPos == null) {
+      const posRes = await pool.query(
+        "SELECT COALESCE(MAX(position),0)+1 AS next FROM decks WHERE user_id=$1 AND parent_id IS NOT DISTINCT FROM $2",
+        [user_id, parent_id ?? null]
+      );
+      newPos = posRes.rows[0].next;
+    }
+
+    const updRes = await pool.query(
+      `UPDATE decks
+       SET name = COALESCE($1, name),
+           parent_id = $2,
+           position = COALESCE($3, position)
+       WHERE id = $4
+       RETURNING *`,
+      [name ?? null, parent_id ?? null, newPos ?? null, id]
     );
-
-    if (result.rows.length === 0) return res.status(404).json({ error: "Deck not found" });
-    res.json(result.rows[0]);
+    res.json(updRes.rows[0]);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: "Failed to update deck" });
@@ -416,6 +464,35 @@ app.delete("/api/flashcards/:id", authenticate, async (req: Request, res: Respon
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: "Failed to delete flashcard" });
+  }
+});
+
+// Reorder decks (require auth)
+app.post("/api/decks/reorder", authenticate, async (req: Request, res: Response) => {
+  const user_id = (req as any).userId;
+  const { parent_id, orderedIds } = req.body as { parent_id: number | null; orderedIds: number[] };
+  if (!Array.isArray(orderedIds)) return res.status(400).json({ error: "orderedIds required" });
+
+  try {
+    await pool.query("BEGIN");
+    // Defer the deferrable unique constraint during this txn
+    await pool.query('SET CONSTRAINTS decks_user_parent_position_uniq DEFERRED');
+
+    for (let i = 0; i < orderedIds.length; i++) {
+      await pool.query(
+        `UPDATE decks
+         SET position = $1
+         WHERE id = $2 AND user_id = $3 AND parent_id IS NOT DISTINCT FROM $4`,
+        [i + 1, orderedIds[i], user_id, parent_id]
+      );
+    }
+
+    await pool.query("COMMIT");
+    res.json({ success: true });
+  } catch (e) {
+    await pool.query("ROLLBACK");
+    console.error(e);
+    res.status(500).json({ error: "Reorder failed" });
   }
 });
 

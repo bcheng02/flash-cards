@@ -1,10 +1,11 @@
 export interface Deck {
-    id: number;
-    name: string;
-    parent_id?: number | null;
-    user_id: number;
-    created_at?: string;
-    updated_at?: string;
+  id: number;
+  name: string;
+  parent_id?: number | null;
+  position?: number;            // added for ordering among siblings
+  user_id: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DeckSummary extends Deck {

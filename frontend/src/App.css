@@ -45,7 +45,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 50;
+  z-index: 1000;
+  /* ensure above navbar/content */
 }
 
 .modal {
@@ -125,4 +126,166 @@
 
 .logout-btn:hover {
   background: #e04a4a;
+}
+
+.deck-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deck-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f3f3f3;
+  border-radius: 6px;
+  padding: 10px 12px;
+  transition: background 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.deck-row.hover {
+  background: #e8eefc;
+}
+
+.deck-row.dragging {
+  opacity: 0.4;
+}
+
+.deck-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.deck-name {
+  font-weight: 500;
+}
+
+.badge {
+  background: #4a7cff;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.deck-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Subtle rounded cross joystick */
+.arrow-pad {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f7f7f7;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e2e2;
+}
+
+.arrow-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #fff;
+  /* box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.06); */
+  pointer-events: none;
+}
+
+/* Arms with larger hitbox, rounded pill shape, white fill and light grey outline */
+.arrow-pad .arrow {
+  position: absolute;
+  width: 22px;
+  /* larger click area */
+  height: 22px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.arrow-pad .arrow:focus {
+  outline: none;
+}
+
+button.arrow {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Draw the white pill + grey border via ::before; rotate per direction */
+.arrow-pad .arrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 11px;
+  /* pill aspect ratio */
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border: 1px solid #bfbfbf;
+  border-radius: 5px;
+  /* soft, rounded */
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Position arms around the pad with subtle spacing */
+.arrow-pad .arrow.up {
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-pad .arrow.down {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-pad .arrow.left {
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrow-pad .arrow.right {
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Rotate pills so they “point” in direction */
+.arrow-pad .arrow.up::before {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.arrow-pad .arrow.down::before {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.arrow-pad .arrow.left::before {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.arrow-pad .arrow.right::before {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+/* Subtle hover, not too standout */
+.arrow-pad .arrow:hover {
+  background: rgba(0, 0, 0, 0.04);
 }

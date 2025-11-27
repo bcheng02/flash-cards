@@ -6,6 +6,7 @@ import DeckView from "./pages/DeckView";
 import RequireAuth from "./auth/RequireAuth";
 import { AuthProvider } from "./auth/AuthProvider";
 import NavBar from "./components/NavBar";
+import './App.css'
 
 export default function App() {
     return (
